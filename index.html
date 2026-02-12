@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Reminder Pro - Ibadah & Tugas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-color: #87CEEB;
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --text-main: #1e3a8a;
+            --accent: #2563eb;
+        }
+
+        .dark-mode {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --text-main: #f1f5f9;
+            --accent: #38bdf8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-color);
+            background-image: url('https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-main);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-mode body {
+            background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2000&auto=format&fit=crop');
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+
+        .task-done { opacity: 0.5; text-decoration: line-through; filter: grayscale(1); }
+        
+        .tab-active { background: var(--accent); color: white !important; transform: scale(1.05); }
+
+        .custom-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        @keyframes pulse-urgent {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .urgent { animation: pulse-urgent 2s infinite; border: 2px solid #ef4444; }
+
+        .alarm-choice:hover { background: var(--accent); color: white; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Header Section -->
+    <header class="max-w-6xl mx-auto glass rounded-[2.5rem] p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="flex items-center gap-5">
+            <div class="bg-blue-600 text-white w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center">
+                <i class="fas fa-cloud-moon text-2xl" id="themeIcon"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black tracking-tighter uppercase">Smart Reminder <span class="text-blue-500">Pro</span></h1>
+                <p id="hijriDisplay" class="text-[12px] font-bold text-blue-500 uppercase tracking-[0.2em] animate-pulse">Memuat Kalender Hijriah...</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-5">
+            <div class="hidden lg:block text-right border-r border-white/20 pr-5">
+                <p class="text-[10px] font-black opacity-40 uppercase mb-1">Motivasi Hari Ini</p>
+                <p id="motivationText" class="text-[11px] font-bold italic opacity-90 italic max-w-xs">"Bismillah, awali hari dengan niat yang tulus."</p>
+            </div>
+            <button onclick="toggleDarkMode()" class="glass w-12 h-12 rounded-xl hover:rotate-45 transition-all">
+                <i class="fas fa-adjust"></i>
+            </button>
+            <div id="clockDisplay" class="text-2xl font-mono font-black bg-white/20 px-6 py-3 rounded-2xl tracking-widest border border-white/20 shadow-inner">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Ibadah Dashboard -->
+        <div class="lg:col-span-4 space-y-8">
+            
+            <!-- Widget Ringkasan (Selalu Terlihat) -->
+            <div class="glass p-7 rounded-[3rem] border-2 border-white/30">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                        <i class="fas fa-bullseye text-blue-500"></i> Widget Dashboard
+                    </h2>
+                    <select id="locationSelect" onchange="updateLocation()" class="bg-transparent text-[10px] font-black outline-none border-b-2 border-blue-500 cursor-pointer">
+                        <option value="Jakarta">Jakarta</option>
+                        <option value="Surabaya">Surabaya</option>
+                        <option value="Medan">Medan</option>
+                    </select>
+                </div>
+                
+                <div id="nextEvent" class="bg-blue-600/10 p-4 rounded-2xl mb-4 border border-blue-500/20">
+                    <p class="text-[10px] font-black opacity-50 mb-1">MENDATANG</p>
+                    <h3 id="nextEventTitle" class="font-black text-sm">Menunggu data...</h3>
+                </div>
+
+                <div id="prayerSchedule" class="grid grid-cols-1 gap-2">
+                    <!-- Jadwal sholat diisi via JS -->
+                </div>
+            </div>
+
+            <!-- Mutaba'ah (Checklist Ibadah) -->
+            <div class="glass p-7 rounded-[3rem]">
+                <div class="flex justify-between items-center mb-5">
+                    <h2 class="font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                        <i class="fas fa-check-double text-emerald-500"></i> Mutaba'ah Harian
+                    </h2>
+                    <span id="ibadahProgressPercent" class="text-[10px] font-black bg-emerald-500 text-white px-2 py-1 rounded-full">0%</span>
+                </div>
+                <div class="space-y-3" id="ibadahChecklist">
+                    <!-- Checklist items -->
+                </div>
+            </div>
+
+            <!-- Kalender Puasa & Hari Besar -->
+            <div class="glass p-7 rounded-[3rem] bg-amber-500/5 border-amber-500/10">
+                <h2 class="font-black text-xs uppercase tracking-widest mb-4 text-amber-600">Info Puasa & Hijriah</h2>
+                <div id="fastingInfo" class="space-y-3">
+                    <!-- Penanda puasa otomatis -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Task Management -->
+        <div class="lg:col-span-8 space-y-8">
+            
+            <!-- To-Do List Harian Fokus -->
+            <div class="glass p-8 md:p-10 rounded-[3.5rem]">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+                    <div>
+                        <h2 class="text-3xl font-black mb-1">To-Do List Hari Ini</h2>
+                        <p class="text-[11px] font-black opacity-60 uppercase tracking-[0.3em]" id="currentDateLong">Rabu, 4 Februari 2026</p>
+                    </div>
+                    <div class="flex bg-white/10 p-1.5 rounded-2xl border border-white/10 shadow-lg">
+                        <button onclick="filterTask('Semua')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest filter-btn tab-active">SEMUA</button>
+                        <button onclick="filterTask('Sekolah')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest filter-btn">SEKOLAH</button>
+                        <button onclick="filterTask('Rumah')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest filter-btn">RUMAH</button>
+                        <button onclick="filterTask('Organisasi')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest filter-btn">ORGANISASI</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mb-10">
+                    <button onclick="toggleModal('taskModal')" class="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[2rem] font-black text-xs tracking-[0.2em] shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <i class="fas fa-plus-circle text-lg"></i> TAMBAH TUGAS BARU
+                    </button>
+                </div>
+
+                <div id="taskGrid" class="space-y-4 min-h-[400px]">
+                    <!-- Tasks diisi via JS -->
+                </div>
+                
+                <div id="emptyTask" class="hidden text-center py-20 opacity-30">
+                    <i class="fas fa-tasks text-6xl mb-6"></i>
+                    <p class="font-black text-sm uppercase tracking-widest">Belum ada tugas terjadwal</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: Form Tugas -->
+    <div id="taskModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+        <div class="glass w-full max-w-lg p-10 rounded-[3.5rem] relative animate-in zoom-in duration-300">
+            <button onclick="toggleModal('taskModal')" class="absolute right-8 top-8 text-blue-500 hover:text-blue-700 transition-colors"><i class="fas fa-times-circle text-2xl"></i></button>
+            <h2 id="modalTitle" class="text-2xl font-black mb-8 flex items-center gap-3"><i class="fas fa-edit text-blue-500"></i> Buat Tugas Baru</h2>
+            <form id="taskForm" class="space-y-5">
+                <input type="hidden" id="editId">
+                
+                <div>
+                    <label class="block text-[10px] font-black opacity-40 uppercase mb-2 ml-2 tracking-widest">Apa yang ingin dikerjakan?</label>
+                    <input type="text" id="tTitle" placeholder="Contoh: Kerjakan PR Matematika hal 12" required class="w-full px-6 py-4 rounded-2xl bg-white/40 border-none outline-none focus:ring-4 focus:ring-blue-500/20 font-bold placeholder:opacity-30">
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-[10px] font-black opacity-40 uppercase mb-2 ml-2 tracking-widest">Kategori</label>
+                        <select id="tCategory" class="w-full px-6 py-4 rounded-2xl bg-white/40 border-none outline-none focus:ring-4 focus:ring-blue-500/20 font-bold">
+                            <option value="Sekolah">Sekolah</option>
+                            <option value="Rumah">Rumah</option>
+                            <option value="Organisasi">Organisasi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black opacity-40 uppercase mb-2 ml-2 tracking-widest">Pengingat (H-)</label>
+                        <select id="tReminder" class="w-full px-6 py-4 rounded-2xl bg-white/40 border-none outline-none focus:ring-4 focus:ring-blue-500/20 font-bold">
+                            <option value="0">Tepat Waktu</option>
+                            <option value="1">H-1 (Besok)</option>
+                            <option value="3">H-3 (3 Hari Lagi)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-[10px] font-black opacity-40 uppercase mb-2 ml-2 tracking-widest">Deadline Tanggal</label>
+                        <input type="date" id="tDate" required class="w-full px-6 py-4 rounded-2xl bg-white/40 border-none outline-none focus:ring-4 focus:ring-blue-500/20 font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black opacity-40 uppercase mb-2 ml-2 tracking-widest">Waktu Alarm</label>
+                        <input type="time" id="tTime" required class="w-full px-6 py-4 rounded-2xl bg-white/40 border-none outline-none focus:ring-4 focus:ring-blue-500/20 font-bold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black opacity-40 uppercase mb-2 ml-2 tracking-widest">Pilihan Suara Alarm</label>
+                    <div class="flex gap-2">
+                        <select id="tAlarmSound" class="flex-1 px-6 py-4 rounded-2xl bg-white/40 border-none outline-none focus:ring-4 focus:ring-blue-500/20 font-bold">
+                            <option value="digital">Digital Classic (Default)</option>
+                            <option value="bell">Vintage School Bell</option>
+                            <option value="relax">Zen Relaxing</option>
+                            <option value="morning">Morning Breeze</option>
+                            <option value="cyber">Cyberpunk Pulse</option>
+                            <option value="piano">Soft Piano</option>
+                            <option value="nature">Bird & Forest</option>
+                        </select>
+                        <button type="button" onclick="previewAlarmSound()" class="px-6 py-4 bg-blue-500 text-white rounded-2xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest">
+                            <i class="fas fa-play"></i> Test
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black tracking-[0.3em] shadow-xl shadow-blue-500/40 hover:bg-blue-700 transition-all mt-4">SIMPAN JADWAL</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alarm Overlay (Full Screen) -->
+    <div id="alarmOverlay" class="fixed inset-0 z-[100] hidden bg-red-600/90 backdrop-blur-xl flex-col items-center justify-center text-white p-10 text-center animate-in fade-in">
+        <div class="relative mb-10">
+            <i class="fas fa-bell text-9xl animate-bounce"></i>
+            <div class="absolute inset-0 animate-ping rounded-full bg-white/20"></div>
+        </div>
+        <h2 id="alarmTitle" class="text-5xl font-black mb-4 uppercase tracking-tighter">Waktu Sholat!</h2>
+        <p id="alarmSub" class="text-xl mb-16 font-bold opacity-80 max-w-lg">Panggilan telah tiba. Segera tuntaskan kewajibanmu agar hati tenang.</p>
+        <button onclick="stopAlarm()" class="bg-white text-red-600 px-20 py-6 rounded-[2.5rem] font-black text-2xl shadow-2xl hover:scale-110 active:scale-95 transition-all">SAYA SUDAH TAHU</button>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="sndAdzan" src="https://www.islamcan.com/audio/adzan/azan1.mp3"></audio>
+    <audio id="sndDigital" src="https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3"></audio>
+    <audio id="sndBell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+    <audio id="sndRelax" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="sndMorning" src="https://assets.mixkit.co/active_storage/sfx/1000/1000-preview.mp3"></audio>
+    <audio id="sndCyber" src="https://assets.mixkit.co/active_storage/sfx/1103/1103-preview.mp3"></audio>
+    <audio id="sndPiano" src="https://assets.mixkit.co/active_storage/sfx/2600/2600-preview.mp3"></audio>
+    <audio id="sndNature" src="https://assets.mixkit.co/active_storage/sfx/1002/1002-preview.mp3"></audio>
+
+    <script>
+        // --- DATA & STATE ---
+        let tasks = JSON.parse(localStorage.getItem('smart_tasks_v5')) || [];
+        let ibadahProgress = JSON.parse(localStorage.getItem('ibadah_v5')) || {
+            date: new Date().toDateString(),
+            items: [
+                { id: 1, name: 'Sholat Wajib 5 Waktu', done: false, icon: 'mosque' },
+                { id: 2, name: 'Sholat Dhuha', done: false, icon: 'sun' },
+                { id: 3, name: 'Sholat Tahajud', done: false, icon: 'moon' },
+                { id: 4, name: 'Dzikir Pagi/Petang', done: false, icon: 'beads' },
+                { id: 5, name: 'Tadarus 1 Juz/Lembar', done: false, icon: 'book-open' },
+                { id: 6, name: 'Puasa Sunnah', done: false, icon: 'utensils-slash' }
+            ]
+        };
+
+        const prayerTimes = {
+            Jakarta: { Subuh: "04:42", Dzuhur: "12:08", Ashar: "15:15", Maghrib: "18:18", Isya: "19:28" },
+            Surabaya: { Subuh: "04:18", Dzuhur: "11:44", Ashar: "14:55", Maghrib: "17:55", Isya: "19:05" },
+            Medan: { Subuh: "05:10", Dzuhur: "12:35", Ashar: "15:45", Maghrib: "18:40", Isya: "19:50" }
+        };
+
+        const motivations = [
+            "Lakukanlah yang terbaik, maka hasil terbaik akan mendatangimu.",
+            "Waktu sholat adalah waktu istirahat terbaik bagi jiwa.",
+            "Selesaikan tugasmu sekarang, nikmati waktumu nanti.",
+            "Pekerjaan yang ditunda hanya akan menambah beban pikiran.",
+            "Keberkahan ada pada bangun pagi dan sholat tepat waktu.",
+            "Fokuslah pada satu tugas hingga selesai, baru pindah ke yang lain."
+        ];
+
+        let currentActiveAlarm = null;
+        let previewAudio = null;
+
+        // --- ENGINE ---
+        window.onload = () => {
+            initApp();
+            renderAll();
+        };
+
+        function initApp() {
+            // Clock & Logic Loop
+            setInterval(() => {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const hmOnly = timeStr.substring(0, 5);
+                document.getElementById('clockDisplay').innerText = timeStr;
+                
+                if (now.getSeconds() === 0) {
+                    checkPrayerAlarms(hmOnly);
+                    checkTaskAlarms(now, hmOnly);
+                }
+            }, 1000);
+
+            // Check Daily Reset
+            const savedDate = ibadahProgress.date;
+            if (savedDate !== new Date().toDateString()) {
+                ibadahProgress.date = new Date().toDateString();
+                ibadahProgress.items.forEach(i => i.done = false);
+                saveIbadah();
+            }
+
+            // Hijri Date (Simulated calculation)
+            updateHijriDate();
+            setRandomMotivation();
+        }
+
+        function checkPrayerAlarms(hm) {
+            const loc = document.getElementById('locationSelect').value;
+            const sched = prayerTimes[loc];
+            Object.entries(sched).forEach(([name, time]) => {
+                if (time === hm) triggerAlarm(`ADZAN: ${name.toUpperCase()}`, "Waktunya memenuhi panggilan Ilahi. Mari tegakkan sholat.");
+            });
+        }
+
+        function checkTaskAlarms(now, hm) {
+            const today = now.toISOString().split('T')[0];
+            tasks.forEach(t => {
+                if (t.isDone) return;
+                
+                // Exact Time Alarm
+                if (t.date === today && t.time === hm) {
+                    triggerAlarm(`TUGAS: ${t.title.toUpperCase()}`, `Segera kerjakan tugas kategori ${t.category}.`, t.alarmSound);
+                }
+
+                // Lead Reminder (H-1, H-3)
+                const taskDate = new Date(t.date);
+                const diffDays = Math.ceil((taskDate - now) / (1000 * 60 * 60 * 24));
+                if (parseInt(t.reminder) > 0 && diffDays === parseInt(t.reminder) && hm === "07:00") {
+                    showToast(`⚠️ Pengingat H-${t.reminder}: Tugas "${t.title}" sudah dekat!`);
+                }
+            });
+        }
+
+        // --- RENDERING ---
+        function renderAll() {
+            renderPrayers();
+            renderIbadah();
+            renderTasks();
+            updateFastingInfo();
+            updateWidgetNext();
+        }
+
+        function renderPrayers() {
+            const loc = document.getElementById('locationSelect').value;
+            const sched = prayerTimes[loc];
+            const container = document.getElementById('prayerSchedule');
+            const nowHM = new Date().toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+            container.innerHTML = Object.entries(sched).map(([name, time]) => {
+                const isNext = time > nowHM;
+                return `
+                    <div class="flex items-center justify-between p-3 rounded-2xl ${isNext ? 'bg-blue-600/20' : 'bg-white/10'} transition-all hover:bg-white/30">
+                        <span class="text-[10px] font-black uppercase opacity-60">${name}</span>
+                        <span class="font-mono font-black text-sm ${isNext ? 'text-blue-500' : ''}">${time}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderIbadah() {
+            const container = document.getElementById('ibadahChecklist');
+            const doneCount = ibadahProgress.items.filter(i => i.done).length;
+            const percent = Math.round((doneCount / ibadahProgress.items.length) * 100);
+            
+            document.getElementById('ibadahProgressPercent').innerText = `${percent}%`;
+            
+            container.innerHTML = ibadahProgress.items.map(item => `
+                <div onclick="toggleIbadah(${item.id})" class="flex items-center justify-between p-3 rounded-2xl bg-white/20 hover:bg-white/40 cursor-pointer transition-all">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-${item.icon} text-blue-500 w-4 text-center"></i>
+                        <span class="text-xs font-bold ${item.done ? 'line-through opacity-40' : ''}">${item.name}</span>
+                    </div>
+                    <i class="fas ${item.done ? 'fa-check-circle text-emerald-500' : 'fa-circle text-white/40'} text-lg"></i>
+                </div>
+            `).join('');
+        }
+
+        function renderTasks(cat = 'Semua') {
+            const grid = document.getElementById('taskGrid');
+            const today = new Date().toISOString().split('T')[0];
+            
+            const filtered = tasks.filter(t => cat === 'Semua' || t.category === cat)
+                                  .sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+            if (filtered.length === 0) {
+                grid.innerHTML = "";
+                document.getElementById('emptyTask').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('emptyTask').classList.add('hidden');
+            grid.innerHTML = filtered.map(t => {
+                const isToday = t.date === today;
+                return `
+                    <div class="glass p-6 rounded-[2rem] flex items-center justify-between gap-4 transition-all hover:translate-x-1 ${isToday && !t.isDone ? 'urgent' : ''} ${t.isDone ? 'task-done' : ''}">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-[9px] font-black px-2 py-0.5 rounded-lg bg-blue-500 text-white uppercase tracking-tighter">${t.category}</span>
+                                ${isToday ? '<span class="text-[9px] font-black text-red-500 animate-pulse">HARI INI</span>' : ''}
+                            </div>
+                            <h3 class="font-black text-sm mb-1">${t.title}</h3>
+                            <div class="flex gap-4 text-[10px] font-black opacity-40 uppercase">
+                                <span><i class="far fa-calendar mr-1"></i>${t.date}</span>
+                                <span><i class="far fa-clock mr-1"></i>${t.time}</span>
+                                <span><i class="fas fa-volume-up mr-1"></i>${t.alarmSound}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="toggleTask(${t.id})" class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all"><i class="fas fa-check"></i></button>
+                            <button onclick="editTask(${t.id})" class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white transition-all"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteTask(${t.id})" class="w-12 h-12 rounded-2xl bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- ACTIONS ---
+        document.getElementById('taskForm').onsubmit = (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const newTask = {
+                id: editId ? parseInt(editId) : Date.now(),
+                title: document.getElementById('tTitle').value,
+                category: document.getElementById('tCategory').value,
+                reminder: document.getElementById('tReminder').value,
+                date: document.getElementById('tDate').value,
+                time: document.getElementById('tTime').value,
+                alarmSound: document.getElementById('tAlarmSound').value,
+                isDone: false
+            };
+
+            if (editId) tasks = tasks.map(t => t.id == editId ? newTask : t);
+            else tasks.push(newTask);
+
+            saveTasks();
+            renderTasks();
+            toggleModal('taskModal');
+            showToast(editId ? "Tugas diperbarui!" : "Tugas baru ditambahkan!");
+        };
+
+        function toggleTask(id) {
+            tasks = tasks.map(t => t.id === id ? {...t, isDone: !t.isDone} : t);
+            saveTasks();
+            renderTasks();
+            updateWidgetNext();
+        }
+
+        function deleteTask(id) {
+            if (confirm("Hapus tugas ini?")) {
+                tasks = tasks.filter(t => t.id !== id);
+                saveTasks();
+                renderTasks();
+                updateWidgetNext();
+            }
+        }
+
+        function editTask(id) {
+            const t = tasks.find(t => t.id === id);
+            document.getElementById('editId').value = t.id;
+            document.getElementById('tTitle').value = t.title;
+            document.getElementById('tCategory').value = t.category;
+            document.getElementById('tReminder').value = t.reminder;
+            document.getElementById('tDate').value = t.date;
+            document.getElementById('tTime').value = t.time;
+            document.getElementById('tAlarmSound').value = t.alarmSound;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit text-blue-500"></i> Edit Tugas';
+            toggleModal('taskModal');
+        }
+
+        function toggleIbadah(id) {
+            const item = ibadahProgress.items.find(i => i.id === id);
+            item.done = !item.done;
+            saveIbadah();
+            renderIbadah();
+        }
+
+        // --- ALARM LOGIC ---
+        function getAudioId(key) {
+            const audioIdMap = {
+                adzan: 'sndAdzan',
+                digital: 'sndDigital',
+                bell: 'sndBell',
+                relax: 'sndRelax',
+                morning: 'sndMorning',
+                cyber: 'sndCyber',
+                piano: 'sndPiano',
+                nature: 'sndNature'
+            };
+            return audioIdMap[key] || 'sndDigital';
+        }
+
+        function triggerAlarm(title, sub, soundKey = 'adzan') {
+            const overlay = document.getElementById('alarmOverlay');
+            document.getElementById('alarmTitle').innerText = title;
+            document.getElementById('alarmSub').innerText = sub;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            const audio = document.getElementById(getAudioId(soundKey));
+            audio.currentTime = 0;
+            audio.loop = true;
+            audio.play().catch(e => console.log("Audio block:", e));
+            currentActiveAlarm = audio;
+        }
+
+        function stopAlarm() {
+            document.getElementById('alarmOverlay').classList.add('hidden');
+            if (currentActiveAlarm) {
+                currentActiveAlarm.pause();
+                currentActiveAlarm.currentTime = 0;
+            }
+        }
+
+        function previewAlarmSound() {
+            const soundKey = document.getElementById('tAlarmSound').value;
+            const audio = document.getElementById(getAudioId(soundKey));
+            
+            // Stop any existing preview
+            if (previewAudio) {
+                previewAudio.pause();
+                previewAudio.currentTime = 0;
+            }
+            
+            audio.currentTime = 0;
+            audio.loop = false; // Preview only once
+            audio.play().catch(e => console.log("Preview audio block:", e));
+            previewAudio = audio;
+            
+            showToast(`Mencoba suara: ${soundKey}`);
+        }
+
+        // --- HELPERS ---
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            document.getElementById('themeIcon').className = isDark ? 'fas fa-sun text-2xl' : 'fas fa-cloud-moon text-2xl';
+        }
+
+        function updateLocation() {
+            renderPrayers();
+            updateWidgetNext();
+            showToast("📍 Lokasi & Jadwal Diperbarui");
+        }
+
+        function filterTask(cat) {
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('tab-active');
+                if (b.innerText === cat.toUpperCase()) b.classList.add('tab-active');
+            });
+            renderTasks(cat);
+        }
+
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            if (m.classList.contains('hidden')) {
+                m.classList.remove('hidden');
+                m.classList.add('flex');
+            } else {
+                m.classList.add('hidden');
+                m.classList.remove('flex');
+                document.getElementById('taskForm').reset();
+                document.getElementById('editId').value = "";
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit text-blue-500"></i> Buat Tugas Baru';
+                
+                // Stop preview if modal closed
+                if (previewAudio) {
+                    previewAudio.pause();
+                    previewAudio.currentTime = 0;
+                }
+            }
+        }
+
+        function saveTasks() { localStorage.setItem('smart_tasks_v5', JSON.stringify(tasks)); }
+        function saveIbadah() { localStorage.setItem('ibadah_v5', JSON.stringify(ibadahProgress)); }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = "fixed bottom-10 left-1/2 -translate-x-1/2 glass px-10 py-4 rounded-full font-black text-xs z-[200] animate-bounce border-2 border-blue-500 shadow-2xl";
+            t.innerText = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        }
+
+        function updateHijriDate() {
+            const today = new Date();
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('hijriDisplay').innerText = `16 Sya'ban 1447 H`; // Simulated
+            document.getElementById('currentDateLong').innerText = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function updateFastingInfo() {
+            const container = document.getElementById('fastingInfo');
+            const today = new Date().getDay(); // 1 = Monday, 4 = Thursday
+            
+            let fastingItems = [
+                { name: 'Puasa Senin', date: today === 1 ? 'HARI INI' : 'Senin Depan', color: 'text-emerald-500' },
+                { name: 'Puasa Kamis', date: today === 4 ? 'HARI INI' : 'Kamis Depan', color: 'text-emerald-500' },
+                { name: 'Ayyamul Bidh', date: '13-15 Maret', color: 'text-blue-500' }
+            ];
+
+            container.innerHTML = fastingItems.map(f => `
+                <div class="flex justify-between p-3 bg-white/30 rounded-2xl border border-white/20">
+                    <span class="text-[11px] font-black">${f.name}</span>
+                    <span class="text-[10px] font-black ${f.color}">${f.date}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateWidgetNext() {
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const hm = now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+            // Find Next Prayer
+            const loc = document.getElementById('locationSelect').value;
+            const sched = prayerTimes[loc];
+            let nextPrayer = Object.entries(sched).find(([n, t]) => t > hm);
+            
+            // Find Next Task
+            let nextTask = tasks.filter(t => !t.isDone && t.date >= todayStr)
+                                .sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+
+            let displayTitle = "Alhamdulillah, Jadwal Aman";
+            if (nextPrayer && (!nextTask || nextPrayer[1] < nextTask.time)) {
+                displayTitle = `SHOLAT ${nextPrayer[0].toUpperCase()} - ${nextPrayer[1]}`;
+            } else if (nextTask) {
+                displayTitle = `TUGAS: ${nextTask.title.substring(0, 15)}... - ${nextTask.time}`;
+            }
+
+            document.getElementById('nextEventTitle').innerText = displayTitle;
+        }
+
+        function setRandomMotivation() {
+            const text = motivations[Math.floor(Math.random() * motivations.length)];
+            document.getElementById('motivationText').innerText = `"${text}"`;
+        }
+    </script>
+</body>
+</html>
